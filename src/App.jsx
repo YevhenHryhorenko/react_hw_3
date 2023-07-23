@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
+import { connect } from "react-redux";
 import Form from "./components/Form.jsx";
 import FilterButton from "./components/FilterButton.jsx";
 import Todo from "./components/Todo.jsx";
@@ -12,80 +13,69 @@ const FILTER_MAP = {
 const FILTER_NAMES = Object.keys(FILTER_MAP);
 
 function App(props) {
-  const [tasks, setTasks] = useState(props.tasks);
-  const [filter, setFilter] = useState("All");
-  
   function addTask(name) {
     const newTask = { id: `todo-${nanoid()}`, name, completed: false };
-    setTasks([...tasks, newTask]);
+    props.dispatch({ type: 'ADD_TASK', payload: newTask });
   }
-  
+
   function toggleTaskCompleted(id) {
-    const updatedTasks = tasks.map((task) => {
-      if (id === task.id) {
-        return { ...task, completed: !task.completed };
-      }
-      return task;
-    });
-    setTasks(updatedTasks);
+    props.dispatch({ type: 'TOGGLE_TASK_COMPLETED', payload: id });
   }
 
   function deleteTask(id) {
-    const remainingTasks = tasks.filter((task) => id !== task.id);
-    setTasks(remainingTasks);
+    props.dispatch({ type: 'DELETE_TASK', payload: id });
   }
 
   function editTask(id, newName) {
-    const editedTaskList = tasks.map((task) => {
-      if (id === task.id) {
-        return { ...task, name: newName };
-      }
-      return task;
-    });
-    setTasks(editedTaskList);
+    props.dispatch({ type: 'EDIT_TASK', payload: { id, newName } });
   }
-  
-  const taskList = tasks
-  .filter(FILTER_MAP[filter])
-  .map((task) => (
-    <Todo
-      id={task.id}
-      name={task.name}
-      completed={task.completed}
-      key={task.id}
-      toggleTaskCompleted={toggleTaskCompleted}
-      deleteTask={deleteTask}
-      editTask={editTask}
-    />
-  ));  
-  
+
+  const taskList = props.tasks
+    .filter(FILTER_MAP[props.filter])
+    .map((task) => (
+      <Todo
+        id={task.id}
+        name={task.name}
+        completed={task.completed}
+        key={task.id}
+        toggleTaskCompleted={toggleTaskCompleted}
+        deleteTask={deleteTask}
+        editTask={editTask}
+      />
+    ));
+
   const filterList = FILTER_NAMES.map((name) => (
     <FilterButton
       key={name}
       name={name}
-      isPressed={name === filter}
-      setFilter={setFilter}
+      isPressed={name === props.filter}
+      setFilter={(filter) => props.dispatch({ type: 'SET_FILTER', payload: filter })}
     />
   ));
   const tasksNoun = taskList.length !== 1 ? "tasks" : "task";
   const headingText = `${taskList.length} ${tasksNoun} remaining`;
-    
+
   return (
     <div className="todoapp stack-large">
       <h1>ToDo list</h1>
       <Form addTask={addTask} />
       <div className="filters btn-group stack-exception">
-        { filterList }
+        {filterList}
       </div>
       <h2 id="list-heading">{headingText}</h2>
       <ul
         role="list"
         className="todo-list stack-large stack-exception"
         aria-labelledby="list-heading">
-        { taskList }
+        {taskList}
       </ul>
     </div>
   );
 }
 
-export default App
+const mapStateToProps = (state) => ({
+  tasks: state.tasks,
+  filter: state.filter,
+});
+
+export default connect(mapStateToProps)(App);
